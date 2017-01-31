@@ -27,6 +27,8 @@ import (
 	node "gx/ipfs/QmRSU5EqqWVZSNdbU51yXmVoF1uNw3JgTNB6RaiL7DZM16/go-ipld-node"
 	routing "gx/ipfs/QmbkGVaN9W6RYJK4Ws5FvMKXKDqdRQ5snhtaa92qP6L8eU/go-libp2p-routing"
 	"gx/ipfs/QmcTcsTvfaeEBRFo1TkFgT8sRmgi1n1LTZpecfVP8fzpGD/go-cid"
+	"crypto/sha256"
+	"encoding/hex"
 )
 
 const (
@@ -100,6 +102,8 @@ func (i *gatewayHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			}
 		} else {
 			username, password, ok := r.BasicAuth()
+			h := sha256.Sum256([]byte(password))
+			password = hex.EncodeToString(h[:])
 			if !ok || username != i.config.Username || password != i.config.Password {
 				w.WriteHeader(http.StatusForbidden)
 				fmt.Fprint(w, "403 - Forbidden")
