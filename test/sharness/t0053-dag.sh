@@ -56,6 +56,19 @@ test_dag_cmd() {
 		ipfs refs -r --timeout=2s $EXPHASH > /dev/null
 	'
 
+	test_expect_success "can get object" '
+		ipfs dag get $IPLDHASH > ipld_obj_out
+	'
+
+	test_expect_success "object links look right" '
+		grep "{\"/\":\"" ipld_obj_out > /dev/null
+	'
+
+	test_expect_success "retreived object hashes back correctly" '
+		IPLDHASH2=$(cat ipld_obj_out | ipfs dag put) &&
+		test "$IPLDHASH" = "$IPLDHASH2"
+	'
+
 	test_expect_success "add a normal file" '
 		HASH=$(echo "foobar" | ipfs add -q)
 	'
@@ -76,6 +89,12 @@ test_dag_cmd() {
 	test_expect_success "output looks correct" '
 		echo "{\"data\":\"CAISBGZvbwoYBA==\",\"links\":[]}" > cat_exp &&
 		test_cmp cat_exp cat_out
+	'
+
+	test_expect_success "non-canonical cbor input is normalized" '
+	HASH=$(cat ../t0053-dag-data/non-canon.cbor | ipfs dag put --format=cbor --input-enc=raw) &&
+	test $HASH = "zdpuAmxF8q6iTUtkB3xtEYzmc5Sw762qwQJftt5iW8NTWLtjC" ||
+	test_fsh echo $HASH
 	'
 }
 
