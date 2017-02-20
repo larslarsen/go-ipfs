@@ -23,3 +23,4 @@ This fork is currently based on IPFS v0.4.5 with the following changes:
 - Added persistent cache for IPNS. Used if network query fails.
 - Remove private key check from config initialization as OpenBazaar doesn't store the private key in the config.
 - Bundled go-libp2p-kad-dht so we can modify protocol strings without maintaining another fork.
+- Add QuerySize paramter to IPNS config.
