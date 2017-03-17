@@ -4,17 +4,17 @@ import (
 	"context"
 	"sync"
 
-	u "github.com/ipfs/go-ipfs-util"
-	logging "github.com/ipfs/go-log"
-	todoctr "github.com/ipfs/go-todocounter"
-	process "github.com/jbenet/goprocess"
-	ctxproc "github.com/jbenet/goprocess/context"
-	peer "github.com/libp2p/go-libp2p-peer"
-	pset "github.com/libp2p/go-libp2p-peer/peerset"
-	pstore "github.com/libp2p/go-libp2p-peerstore"
-	queue "github.com/libp2p/go-libp2p-peerstore/queue"
-	routing "github.com/libp2p/go-libp2p-routing"
-	notif "github.com/libp2p/go-libp2p-routing/notifications"
+	todoctr "gx/ipfs/QmQNQhNmY4STU1MURjH9vYEMpx2ncMS4gbwxXWtrEjzVAq/go-todocounter"
+	process "gx/ipfs/QmSF8fPo3jgVBAy8fpdjjYqgG87dkJgUprRBHRd2tmfgpP/goprocess"
+	ctxproc "gx/ipfs/QmSF8fPo3jgVBAy8fpdjjYqgG87dkJgUprRBHRd2tmfgpP/goprocess/context"
+	logging "gx/ipfs/QmSpJByNKFX1sCsHBEp3R73FL4NF6FnQTEGyNAXHm2GS52/go-log"
+	routing "gx/ipfs/QmUc6twRJRE9MNrUGd8eo9WjHHxebGppdZfptGCASkR7fF/go-libp2p-routing"
+	notif "gx/ipfs/QmUc6twRJRE9MNrUGd8eo9WjHHxebGppdZfptGCASkR7fF/go-libp2p-routing/notifications"
+	peer "gx/ipfs/QmWUswjn261LSyVxWAEpMVtPdy8zmKBJJfBpG3Qdpa8ZsE/go-libp2p-peer"
+	pset "gx/ipfs/QmWUswjn261LSyVxWAEpMVtPdy8zmKBJJfBpG3Qdpa8ZsE/go-libp2p-peer/peerset"
+	u "gx/ipfs/QmZuY8aV7zbNXVy6DyN9SmnuH3o9nG852F4aTiSBpts8d1/go-ipfs-util"
+	pstore "gx/ipfs/Qme1g4e3m2SmdiSGGU3vSWmUStwUjc5oECnEriaK9Xa1HU/go-libp2p-peerstore"
+	queue "gx/ipfs/Qme1g4e3m2SmdiSGGU3vSWmUStwUjc5oECnEriaK9Xa1HU/go-libp2p-peerstore/queue"
 )
 
 var maxQueryConcurrency = AlphaValue
