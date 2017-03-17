@@ -18,12 +18,13 @@ type GatewayConfig struct {
 	PathPrefixes  []string
 	Resolver      *bc.BlockstackClient
 	Authenticated bool
+	AllowedIPs    map[string]bool
 	Cookie        http.Cookie
 	Username      string
 	Password      string
 }
 
-func GatewayOption(resolver *bc.BlockstackClient, authenticated bool, authCookie http.Cookie, username, password string, writable bool, paths ...string) ServeOption {
+func GatewayOption(resolver *bc.BlockstackClient, authenticated bool, allowedIPs []string, authCookie http.Cookie, username, password string, writable bool, paths ...string) ServeOption {
 
 	return func(n *core.IpfsNode, _ net.Listener, mux *http.ServeMux) (*http.ServeMux, error) {
 		cfg, err := n.Repo.Config()
@@ -31,12 +32,19 @@ func GatewayOption(resolver *bc.BlockstackClient, authenticated bool, authCookie
 			return nil, err
 		}
 
+		ipMap := make(map[string]bool)
+		for _, ip := range allowedIPs {
+			ipMap[ip] = true
+		}
+
+
 		gateway := newGatewayHandler(n, GatewayConfig{
 			Headers:       cfg.Gateway.HTTPHeaders,
 			Writable:      writable,
 			PathPrefixes:  cfg.Gateway.PathPrefixes,
 			Resolver:      resolver,
 			Authenticated: authenticated,
+			AllowedIPs:    ipMap,
 			Cookie:        authCookie,
 			Username:      username,
 			Password:      password,
