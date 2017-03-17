@@ -4,17 +4,17 @@ import (
 	"context"
 	"sync"
 
-	todoctr "gx/ipfs/QmQNQhNmY4STU1MURjH9vYEMpx2ncMS4gbwxXWtrEjzVAq/go-todocounter"
-	process "gx/ipfs/QmSF8fPo3jgVBAy8fpdjjYqgG87dkJgUprRBHRd2tmfgpP/goprocess"
-	ctxproc "gx/ipfs/QmSF8fPo3jgVBAy8fpdjjYqgG87dkJgUprRBHRd2tmfgpP/goprocess/context"
-	logging "gx/ipfs/QmSpJByNKFX1sCsHBEp3R73FL4NF6FnQTEGyNAXHm2GS52/go-log"
-	u "gx/ipfs/Qmb912gdngC1UWwTkhuW8knyRbcWeu5kqkxBpveLmW8bSr/go-ipfs-util"
-	routing "gx/ipfs/QmbkGVaN9W6RYJK4Ws5FvMKXKDqdRQ5snhtaa92qP6L8eU/go-libp2p-routing"
-	notif "gx/ipfs/QmbkGVaN9W6RYJK4Ws5FvMKXKDqdRQ5snhtaa92qP6L8eU/go-libp2p-routing/notifications"
-	pstore "gx/ipfs/QmeXj9VAjmYQZxpmVz7VzccbJrpmr8qkCDSjfVNsPTWTYU/go-libp2p-peerstore"
-	queue "gx/ipfs/QmeXj9VAjmYQZxpmVz7VzccbJrpmr8qkCDSjfVNsPTWTYU/go-libp2p-peerstore/queue"
-	peer "gx/ipfs/QmfMmLGoKzCHDN7cGgk64PJr4iipzidDRME8HABSJqvmhC/go-libp2p-peer"
-	pset "gx/ipfs/QmfMmLGoKzCHDN7cGgk64PJr4iipzidDRME8HABSJqvmhC/go-libp2p-peer/peerset"
+	u "github.com/ipfs/go-ipfs-util"
+	logging "github.com/ipfs/go-log"
+	todoctr "github.com/ipfs/go-todocounter"
+	process "github.com/jbenet/goprocess"
+	ctxproc "github.com/jbenet/goprocess/context"
+	peer "github.com/libp2p/go-libp2p-peer"
+	pset "github.com/libp2p/go-libp2p-peer/peerset"
+	pstore "github.com/libp2p/go-libp2p-peerstore"
+	queue "github.com/libp2p/go-libp2p-peerstore/queue"
+	routing "github.com/libp2p/go-libp2p-routing"
+	notif "github.com/libp2p/go-libp2p-routing/notifications"
 )
 
 var maxQueryConcurrency = AlphaValue
@@ -27,11 +27,13 @@ type dhtQuery struct {
 }
 
 type dhtQueryResult struct {
-	value         []byte            // GetValue
-	peer          pstore.PeerInfo   // FindPeer
-	providerPeers []pstore.PeerInfo // GetProviders
-	closerPeers   []pstore.PeerInfo // *
+	value         []byte             // GetValue
+	peer          *pstore.PeerInfo   // FindPeer
+	providerPeers []pstore.PeerInfo  // GetProviders
+	closerPeers   []*pstore.PeerInfo // *
 	success       bool
+
+	finalSet *pset.PeerSet
 }
 
 // constructs query
@@ -155,7 +157,9 @@ func (r *dhtQueryRunner) Run(ctx context.Context, peers []peer.ID) (*dhtQueryRes
 		return r.result, nil
 	}
 
-	return nil, err
+	return &dhtQueryResult{
+		finalSet: r.peersSeen,
+	}, err
 }
 
 func (r *dhtQueryRunner) addPeerToQuery(next peer.ID) {

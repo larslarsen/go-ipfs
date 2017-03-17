@@ -10,31 +10,31 @@ import (
 	"sync"
 	"time"
 
-	pb "gx/ipfs/QmRG9fdibExi5DFy8kzyxF76jvZVUb2mQBUSMNP1YaYn9M/go-libp2p-kad-dht/pb"
-	providers "gx/ipfs/QmRG9fdibExi5DFy8kzyxF76jvZVUb2mQBUSMNP1YaYn9M/go-libp2p-kad-dht/providers"
-	routing "gx/ipfs/QmbkGVaN9W6RYJK4Ws5FvMKXKDqdRQ5snhtaa92qP6L8eU/go-libp2p-routing"
+	pb "github.com/libp2p/go-libp2p-kad-dht/pb"
+	providers "github.com/libp2p/go-libp2p-kad-dht/providers"
+	routing "github.com/libp2p/go-libp2p-routing"
 
-	host "gx/ipfs/QmPsRtodRuBUir32nz5v4zuSBTSszrR1d3fA6Ahb6eaejj/go-libp2p-host"
-	kb "gx/ipfs/QmRVHVr38ChANF2PUMNKQs7Q4uVWCLVabrfcTG9taNbcVy/go-libp2p-kbucket"
-	ds "gx/ipfs/QmRWDav6mzWseLWeYfVd5fvUKiVe9xNH29YfMF438fG364/go-datastore"
-	goprocess "gx/ipfs/QmSF8fPo3jgVBAy8fpdjjYqgG87dkJgUprRBHRd2tmfgpP/goprocess"
-	goprocessctx "gx/ipfs/QmSF8fPo3jgVBAy8fpdjjYqgG87dkJgUprRBHRd2tmfgpP/goprocess/context"
-	logging "gx/ipfs/QmSpJByNKFX1sCsHBEp3R73FL4NF6FnQTEGyNAXHm2GS52/go-log"
-	proto "gx/ipfs/QmZ4Qi3GaRbjcx28Sme5eMH7RQjGkt8wHxt2a65oLaeFEV/gogo-protobuf/proto"
-	protocol "gx/ipfs/QmZNkThpqfVXs9GNbexPrfBbXSLNYeKrE7jwFM2oqHbyqN/go-libp2p-protocol"
-	base32 "gx/ipfs/QmZvZSVtvxak4dcTkhsQhqd1SQ6rg5UzaSTu62WfWKjj93/base32"
-	cid "gx/ipfs/QmcTcsTvfaeEBRFo1TkFgT8sRmgi1n1LTZpecfVP8fzpGD/go-cid"
-	record "gx/ipfs/QmdM4ohF7cr4MvAECVeD3hRA3HtZrk1ngaek4n8ojVT87h/go-libp2p-record"
-	recpb "gx/ipfs/QmdM4ohF7cr4MvAECVeD3hRA3HtZrk1ngaek4n8ojVT87h/go-libp2p-record/pb"
-	pstore "gx/ipfs/QmeXj9VAjmYQZxpmVz7VzccbJrpmr8qkCDSjfVNsPTWTYU/go-libp2p-peerstore"
-	peer "gx/ipfs/QmfMmLGoKzCHDN7cGgk64PJr4iipzidDRME8HABSJqvmhC/go-libp2p-peer"
-	ci "gx/ipfs/QmfWDLQjGjVe4fr5CoztYW2DYYjRysMJrFe1RCsXLPTf46/go-libp2p-crypto"
+	proto "github.com/gogo/protobuf/proto"
+	cid "github.com/ipfs/go-cid"
+	ds "github.com/ipfs/go-datastore"
+	logging "github.com/ipfs/go-log"
+	goprocess "github.com/jbenet/goprocess"
+	goprocessctx "github.com/jbenet/goprocess/context"
+	ci "github.com/libp2p/go-libp2p-crypto"
+	host "github.com/libp2p/go-libp2p-host"
+	kb "github.com/libp2p/go-libp2p-kbucket"
+	peer "github.com/libp2p/go-libp2p-peer"
+	pstore "github.com/libp2p/go-libp2p-peerstore"
+	protocol "github.com/libp2p/go-libp2p-protocol"
+	record "github.com/libp2p/go-libp2p-record"
+	recpb "github.com/libp2p/go-libp2p-record/pb"
+	base32 "github.com/whyrusleeping/base32"
 )
 
 var log = logging.Logger("dht")
 
-var ProtocolDHT protocol.ID = "/openbazaar/kad/1.0.0"
-var ProtocolDHTOld protocol.ID = "/openbazaar/dht"
+var ProtocolDHT protocol.ID = "/ipfs/kad/1.0.0"
+var ProtocolDHTOld protocol.ID = "/ipfs/dht"
 
 // NumBootstrapQueries defines the number of random dht queries to do to
 // collect members of the routing table.
@@ -145,7 +145,7 @@ var errInvalidRecord = errors.New("received invalid record")
 // key. It returns either the value or a list of closer peers.
 // NOTE: It will update the dht's peerstore with any new addresses
 // it finds for the given peer.
-func (dht *IpfsDHT) getValueOrPeers(ctx context.Context, p peer.ID, key string) (*recpb.Record, []pstore.PeerInfo, error) {
+func (dht *IpfsDHT) getValueOrPeers(ctx context.Context, p peer.ID, key string) (*recpb.Record, []*pstore.PeerInfo, error) {
 
 	pmes, err := dht.getValueSingle(ctx, p, key)
 	if err != nil {
@@ -312,21 +312,20 @@ func (dht *IpfsDHT) betterPeersToQuery(pmes *pb.Message, p peer.ID, count int) [
 
 	// no node? nil
 	if closer == nil {
+		log.Warning("no closer peers to send:", p)
 		return nil
-	}
-
-	// == to self? thats bad
-	for _, p := range closer {
-		if p == dht.self {
-			log.Debug("attempted to return self! this shouldn't happen...")
-			return nil
-		}
 	}
 
 	var filtered []peer.ID
 	for _, clp := range closer {
+
+		// == to self? thats bad
+		if clp == dht.self {
+			log.Warning("attempted to return self! this shouldn't happen...")
+			return nil
+		}
 		// Dont send a peer back themselves
-		if p == clp {
+		if clp == p {
 			continue
 		}
 

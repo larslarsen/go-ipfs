@@ -79,7 +79,8 @@ run_advanced_test() {
 	run_random_dir_test
 
 	test_expect_success "shut down nodes" '
-		iptb stop
+		iptb stop ||
+			test_fsh tail -n +1 .iptb/*/daemon.std*
 	'
 }
 
@@ -89,7 +90,7 @@ test_expect_success "set up tcp testbed" '
 
 # test multiplex muxer
 export LIBP2P_MUX_PREFS="/mplex/6.7.0"
-run_advanced_test "--enable-mplex-experiment"
+run_advanced_test
 unset LIBP2P_MUX_PREFS
 
 # test default configuration

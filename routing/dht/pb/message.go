@@ -1,12 +1,12 @@
 package dht_pb
 
 import (
-	inet "gx/ipfs/QmQx1dHDDYENugYgqA22BaBrRfuv1coSsuPiM7rYh1wwGH/go-libp2p-net"
-	logging "gx/ipfs/QmSpJByNKFX1sCsHBEp3R73FL4NF6FnQTEGyNAXHm2GS52/go-log"
-	b58 "gx/ipfs/QmT8rehPR3F6bmwL6zjUN8XpiDBFFpMP2myPdC6ApsWfJf/go-base58"
-	ma "gx/ipfs/QmUAQaWbKxGCUTuoQVvvicbQNZ9APF5pDGWyAZSe93AtKH/go-multiaddr"
-	pstore "gx/ipfs/QmeXj9VAjmYQZxpmVz7VzccbJrpmr8qkCDSjfVNsPTWTYU/go-libp2p-peerstore"
-	peer "gx/ipfs/QmfMmLGoKzCHDN7cGgk64PJr4iipzidDRME8HABSJqvmhC/go-libp2p-peer"
+	logging "github.com/ipfs/go-log"
+	b58 "github.com/jbenet/go-base58"
+	inet "github.com/libp2p/go-libp2p-net"
+	peer "github.com/libp2p/go-libp2p-peer"
+	pstore "github.com/libp2p/go-libp2p-peerstore"
+	ma "github.com/multiformats/go-multiaddr"
 )
 
 var log = logging.Logger("dht.pb")
@@ -53,8 +53,8 @@ func peerInfoToPBPeer(p pstore.PeerInfo) *Message_Peer {
 }
 
 // PBPeerToPeer turns a *Message_Peer into its pstore.PeerInfo counterpart
-func PBPeerToPeerInfo(pbp *Message_Peer) pstore.PeerInfo {
-	return pstore.PeerInfo{
+func PBPeerToPeerInfo(pbp *Message_Peer) *pstore.PeerInfo {
+	return &pstore.PeerInfo{
 		ID:    peer.ID(pbp.GetId()),
 		Addrs: pbp.Addresses(),
 	}
@@ -93,8 +93,8 @@ func PeerRoutingInfosToPBPeers(peers []PeerRoutingInfo) []*Message_Peer {
 
 // PBPeersToPeerInfos converts given []*Message_Peer into []pstore.PeerInfo
 // Invalid addresses will be silently omitted.
-func PBPeersToPeerInfos(pbps []*Message_Peer) []pstore.PeerInfo {
-	peers := make([]pstore.PeerInfo, 0, len(pbps))
+func PBPeersToPeerInfos(pbps []*Message_Peer) []*pstore.PeerInfo {
+	peers := make([]*pstore.PeerInfo, 0, len(pbps))
 	for _, pbp := range pbps {
 		peers = append(peers, PBPeerToPeerInfo(pbp))
 	}

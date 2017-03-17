@@ -21,15 +21,13 @@ import (
 	fsrepo "github.com/ipfs/go-ipfs/repo/fsrepo"
 	migrate "github.com/ipfs/go-ipfs/repo/fsrepo/migrations"
 
-	"gx/ipfs/QmR3KwhXCRLTNZB59vELb2HhEWrGy9nuychepxFtj3wWYa/client_golang/prometheus"
-	"gx/ipfs/QmT6Cp31887FpAc25z25YHgpFJohZedrYLWPPspRtj1Brp/go-multiaddr-net"
-	ma "gx/ipfs/QmUAQaWbKxGCUTuoQVvvicbQNZ9APF5pDGWyAZSe93AtKH/go-multiaddr"
-	mprome "gx/ipfs/QmXWro6iddJRbGWUoZDpTu6tjo5EXX4xJHHR9VczeoGZbw/go-metrics-prometheus"
-	util "gx/ipfs/Qmb912gdngC1UWwTkhuW8knyRbcWeu5kqkxBpveLmW8bSr/go-ipfs-util"
-	iconn "gx/ipfs/QmctX4TY6jXtpfeDiwMGoB4qVTBGDnz7T7r22CwQSzTgwt/go-libp2p-interface-conn"
-	pstore "gx/ipfs/QmeXj9VAjmYQZxpmVz7VzccbJrpmr8qkCDSjfVNsPTWTYU/go-libp2p-peerstore"
-
-	_ "gx/ipfs/QmV3NSS3A1kX5s28r7yLczhDsXzkgo65cqRgKFXYunWZmD/metrics/runtime"
+	ma "gx/ipfs/QmSWLfmj5frN9xVLMMN846dMDriy5wN5jeghUm7aTW3DAG/go-multiaddr"
+	mprome "gx/ipfs/QmSk46nSD78YiuNojYMS8NW6hSCjH95JajqqzzoychZgef/go-metrics-prometheus"
+	iconn "gx/ipfs/QmT6jBTqNKhhb8dbzCEMUNkGhm3RuRActcMhpShAHLpQtp/go-libp2p-interface-conn"
+	"gx/ipfs/QmVCNGTyD4EkvNYaAp253uMQ9Rjsjy2oGMvcdJJUoVRfja/go-multiaddr-net"
+	"gx/ipfs/QmX3QZ5jHEPidwUrymXV1iSCSUhdGxj15sm2gP4jKMef7B/client_golang/prometheus"
+	util "gx/ipfs/QmZuY8aV7zbNXVy6DyN9SmnuH3o9nG852F4aTiSBpts8d1/go-ipfs-util"
+	pstore "gx/ipfs/Qme1g4e3m2SmdiSGGU3vSWmUStwUjc5oECnEriaK9Xa1HU/go-libp2p-peerstore"
 )
 
 const (
@@ -161,8 +159,7 @@ Headers.
 		cmds.BoolOption(offlineKwd, "Run offline. Do not connect to the rest of the network but provide local API.").Default(false),
 		cmds.BoolOption(migrateKwd, "If true, assume yes at the migrate prompt. If false, assume no."),
 		cmds.BoolOption(enableFloodSubKwd, "Instantiate the ipfs daemon with the experimental pubsub feature enabled."),
-		cmds.BoolOption(enableMultiplexKwd, "Add the experimental 'go-multiplex' stream muxer to libp2p on construction."),
-
+		cmds.BoolOption(enableMultiplexKwd, "Add the experimental 'go-multiplex' stream muxer to libp2p on construction.").Default(true),
 		// TODO: add way to override addresses. tricky part: updating the config if also --init.
 		// cmds.StringOption(apiAddrKwd, "Address for the daemon rpc API (overrides config)"),
 		// cmds.StringOption(swarmAddrKwd, "Address for the swarm socket (overrides config)"),
@@ -347,6 +344,11 @@ func daemonFunc(req cmds.Request, res cmds.Response) {
 	}
 	node.SetLocal(false)
 
+	if node.PNetFingerpint != nil {
+		fmt.Println("Swarm is limited to private network of peers with the swarm key")
+		fmt.Printf("Swarm key fingerprint: %x\n", node.PNetFingerpint)
+	}
+
 	printSwarmAddrs(node)
 
 	defer func() {
@@ -372,17 +374,6 @@ func daemonFunc(req cmds.Request, res cmds.Response) {
 		return
 	}
 
-	// construct http gateway - if it is set in the config
-	var gwErrc <-chan error
-	if len(cfg.Addresses.Gateway) > 0 {
-		var err error
-		err, gwErrc = serveHTTPGateway(req)
-		if err != nil {
-			res.SetError(err, cmds.ErrNormal)
-			return
-		}
-	}
-
 	// construct fuse mountpoints - if the user provided the --mount flag
 	mount, _, err := req.Option(mountKwd).Bool()
 	if err != nil {
@@ -406,6 +397,17 @@ func daemonFunc(req cmds.Request, res cmds.Response) {
 	if err != nil {
 		res.SetError(err, cmds.ErrNormal)
 		return
+	}
+
+	// construct http gateway - if it is set in the config
+	var gwErrc <-chan error
+	if len(cfg.Addresses.Gateway) > 0 {
+		var err error
+		err, gwErrc = serveHTTPGateway(req)
+		if err != nil {
+			res.SetError(err, cmds.ErrNormal)
+			return
+		}
 	}
 
 	// initialize metrics collector

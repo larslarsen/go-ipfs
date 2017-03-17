@@ -6,19 +6,17 @@ import (
 	"fmt"
 	"time"
 
-	pb "gx/ipfs/QmRG9fdibExi5DFy8kzyxF76jvZVUb2mQBUSMNP1YaYn9M/go-libp2p-kad-dht/pb"
-	ds "gx/ipfs/QmRWDav6mzWseLWeYfVd5fvUKiVe9xNH29YfMF438fG364/go-datastore"
-	lgbl "gx/ipfs/QmTMy4hVSY28DdwJ9kBz6y7q6MuioFzPcpM3Ma3aPjo1i3/go-libp2p-loggables"
-	proto "gx/ipfs/QmZ4Qi3GaRbjcx28Sme5eMH7RQjGkt8wHxt2a65oLaeFEV/gogo-protobuf/proto"
-	base32 "gx/ipfs/QmZvZSVtvxak4dcTkhsQhqd1SQ6rg5UzaSTu62WfWKjj93/base32"
-	u "gx/ipfs/Qmb912gdngC1UWwTkhuW8knyRbcWeu5kqkxBpveLmW8bSr/go-ipfs-util"
-	cid "gx/ipfs/QmcTcsTvfaeEBRFo1TkFgT8sRmgi1n1LTZpecfVP8fzpGD/go-cid"
-	recpb "gx/ipfs/QmdM4ohF7cr4MvAECVeD3hRA3HtZrk1ngaek4n8ojVT87h/go-libp2p-record/pb"
-	pstore "gx/ipfs/QmeXj9VAjmYQZxpmVz7VzccbJrpmr8qkCDSjfVNsPTWTYU/go-libp2p-peerstore"
-	peer "gx/ipfs/QmfMmLGoKzCHDN7cGgk64PJr4iipzidDRME8HABSJqvmhC/go-libp2p-peer"
+	proto "github.com/gogo/protobuf/proto"
+	cid "github.com/ipfs/go-cid"
+	ds "github.com/ipfs/go-datastore"
+	u "github.com/ipfs/go-ipfs-util"
+	pb "github.com/libp2p/go-libp2p-kad-dht/pb"
+	lgbl "github.com/libp2p/go-libp2p-loggables"
+	peer "github.com/libp2p/go-libp2p-peer"
+	pstore "github.com/libp2p/go-libp2p-peerstore"
+	recpb "github.com/libp2p/go-libp2p-record/pb"
+	base32 "github.com/whyrusleeping/base32"
 )
-
-const MAGIC string = "000000000000000000000000"
 
 // The number of closer peers to send on requests.
 var CloserPeerCount = KValue
@@ -278,19 +276,24 @@ func (dht *IpfsDHT) handleAddProvider(ctx context.Context, p peer.ID, pmes *pb.M
 	// add provider should use the address given in the message
 	pinfos := pb.PBPeersToPeerInfos(pmes.GetProviderPeers())
 	for _, pi := range pinfos {
+		if pi.ID != p {
+			// we should ignore this provider reccord! not from originator.
+			// (we chould sign them and check signature later...)
+			log.Debugf("handleAddProvider received provider %s from %s. Ignore.", pi.ID, p)
+			continue
+		}
+
 		if len(pi.Addrs) < 1 {
 			log.Debugf("%s got no valid addresses for provider %s. Ignore.", dht.self, p)
 			continue
 		}
 
 		log.Infof("received provider %s for %s (addrs: %s)", p, c, pi.Addrs)
-		if pi.ID != dht.self && !isPointer(pi.ID) { // dont add own addrs.
+		if pi.ID != dht.self { // dont add own addrs.
 			// add the received addresses to our peerstore.
 			dht.peerstore.AddAddrs(pi.ID, pi.Addrs, pstore.ProviderAddrTTL)
-		} else if isPointer(pi.ID) {
-			dht.peerstore.AddAddrs(pi.ID, pi.Addrs, time.Hour*24*7)
 		}
-		dht.providers.AddProvider(ctx, c, pi.ID)
+		dht.providers.AddProvider(ctx, c, p)
 	}
 
 	return nil, nil
@@ -298,9 +301,4 @@ func (dht *IpfsDHT) handleAddProvider(ctx context.Context, p peer.ID, pmes *pb.M
 
 func convertToDsKey(s string) ds.Key {
 	return ds.NewKey(base32.RawStdEncoding.EncodeToString([]byte(s)))
-}
-
-func isPointer(id peer.ID) bool {
-	hexID := peer.IDHexEncode(id)
-	return hexID[4:28] == MAGIC
 }

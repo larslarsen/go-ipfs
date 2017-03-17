@@ -8,16 +8,16 @@ import (
 	"sync"
 	"time"
 
-	inet "gx/ipfs/QmQx1dHDDYENugYgqA22BaBrRfuv1coSsuPiM7rYh1wwGH/go-libp2p-net"
-	pb "gx/ipfs/QmRG9fdibExi5DFy8kzyxF76jvZVUb2mQBUSMNP1YaYn9M/go-libp2p-kad-dht/pb"
-	kb "gx/ipfs/QmRVHVr38ChANF2PUMNKQs7Q4uVWCLVabrfcTG9taNbcVy/go-libp2p-kbucket"
-	routing "gx/ipfs/QmbkGVaN9W6RYJK4Ws5FvMKXKDqdRQ5snhtaa92qP6L8eU/go-libp2p-routing"
-	notif "gx/ipfs/QmbkGVaN9W6RYJK4Ws5FvMKXKDqdRQ5snhtaa92qP6L8eU/go-libp2p-routing/notifications"
-	cid "gx/ipfs/QmcTcsTvfaeEBRFo1TkFgT8sRmgi1n1LTZpecfVP8fzpGD/go-cid"
-	record "gx/ipfs/QmdM4ohF7cr4MvAECVeD3hRA3HtZrk1ngaek4n8ojVT87h/go-libp2p-record"
-	pstore "gx/ipfs/QmeXj9VAjmYQZxpmVz7VzccbJrpmr8qkCDSjfVNsPTWTYU/go-libp2p-peerstore"
-	peer "gx/ipfs/QmfMmLGoKzCHDN7cGgk64PJr4iipzidDRME8HABSJqvmhC/go-libp2p-peer"
-	pset "gx/ipfs/QmfMmLGoKzCHDN7cGgk64PJr4iipzidDRME8HABSJqvmhC/go-libp2p-peer/peerset"
+	cid "github.com/ipfs/go-cid"
+	pb "github.com/libp2p/go-libp2p-kad-dht/pb"
+	kb "github.com/libp2p/go-libp2p-kbucket"
+	inet "github.com/libp2p/go-libp2p-net"
+	peer "github.com/libp2p/go-libp2p-peer"
+	pset "github.com/libp2p/go-libp2p-peer/peerset"
+	pstore "github.com/libp2p/go-libp2p-peerstore"
+	record "github.com/libp2p/go-libp2p-record"
+	routing "github.com/libp2p/go-libp2p-routing"
+	notif "github.com/libp2p/go-libp2p-routing/notifications"
 )
 
 // asyncQueryBuffer is the size of buffered channels in async queries. This
@@ -25,7 +25,6 @@ import (
 // results and continue querying closer peers. Note that different query
 // results will wait for the channel to drain.
 var asyncQueryBuffer = 10
-var QuerySize = 10
 
 // This file implements the Routing interface for the IpfsDHT struct.
 
@@ -88,7 +87,7 @@ func (dht *IpfsDHT) GetValue(ctx context.Context, key string) ([]byte, error) {
 	ctx, cancel := context.WithTimeout(ctx, time.Minute)
 	defer cancel()
 
-	vals, err := dht.GetValues(ctx, key, QuerySize)
+	vals, err := dht.GetValues(ctx, key, 16)
 	if err != nil {
 		return nil, err
 	}
@@ -166,7 +165,7 @@ func (dht *IpfsDHT) GetValues(ctx context.Context, key string, nvals int) ([]rou
 	}
 
 	// get closest peers in the routing table
-	rtp := dht.routingTable.NearestPeers(kb.ConvertKey(key), KValue)
+	rtp := dht.routingTable.NearestPeers(kb.ConvertKey(key), AlphaValue)
 	log.Debugf("peers in rt: %d %s", len(rtp), rtp)
 	if len(rtp) == 0 {
 		log.Warning("No peers from routing table!")
@@ -219,7 +218,7 @@ func (dht *IpfsDHT) GetValues(ctx context.Context, key string, nvals int) ([]rou
 		notif.PublishQueryEvent(parent, &notif.QueryEvent{
 			Type:      notif.PeerResponse,
 			ID:        p,
-			Responses: pointerizePeerInfos(peers),
+			Responses: peers,
 		})
 
 		return res, nil
@@ -317,14 +316,16 @@ func (dht *IpfsDHT) findProvidersAsyncRoutine(ctx context.Context, key *cid.Cid,
 	for _, p := range provs {
 		// NOTE: Assuming that this list of peers is unique
 		if ps.TryAdd(p) {
+			pi := dht.peerstore.PeerInfo(p)
 			select {
-			case peerOut <- dht.peerstore.PeerInfo(p):
+			case peerOut <- pi:
 			case <-ctx.Done():
 				return
 			}
 		}
 
 		// If we have enough peers locally, dont bother with remote RPC
+		// TODO: is this a DOS vector?
 		if ps.Size() >= count {
 			return
 		}
@@ -352,7 +353,7 @@ func (dht *IpfsDHT) findProvidersAsyncRoutine(ctx context.Context, key *cid.Cid,
 			if ps.TryAdd(prov.ID) {
 				log.Debugf("using provider: %s", prov)
 				select {
-				case peerOut <- prov:
+				case peerOut <- *prov:
 				case <-ctx.Done():
 					log.Debug("context timed out sending more providers")
 					return nil, ctx.Err()
@@ -372,12 +373,12 @@ func (dht *IpfsDHT) findProvidersAsyncRoutine(ctx context.Context, key *cid.Cid,
 		notif.PublishQueryEvent(parent, &notif.QueryEvent{
 			Type:      notif.PeerResponse,
 			ID:        p,
-			Responses: pointerizePeerInfos(clpeers),
+			Responses: clpeers,
 		})
 		return &dhtQueryResult{closerPeers: clpeers}, nil
 	})
 
-	peers := dht.routingTable.NearestPeers(kb.ConvertKey(key.KeyString()), KValue)
+	peers := dht.routingTable.NearestPeers(kb.ConvertKey(key.KeyString()), AlphaValue)
 	_, err := query.Run(ctx, peers)
 	if err != nil {
 		log.Debugf("Query error: %s", err)
@@ -407,7 +408,7 @@ func (dht *IpfsDHT) FindPeer(ctx context.Context, id peer.ID) (pstore.PeerInfo, 
 		return pi, nil
 	}
 
-	peers := dht.routingTable.NearestPeers(kb.ConvertPeerID(id), KValue)
+	peers := dht.routingTable.NearestPeers(kb.ConvertPeerID(id), AlphaValue)
 	if len(peers) == 0 {
 		return pstore.PeerInfo{}, kb.ErrLookupFailure
 	}
@@ -448,7 +449,7 @@ func (dht *IpfsDHT) FindPeer(ctx context.Context, id peer.ID) (pstore.PeerInfo, 
 
 		notif.PublishQueryEvent(parent, &notif.QueryEvent{
 			Type:      notif.PeerResponse,
-			Responses: pointerizePeerInfos(clpeerInfos),
+			Responses: clpeerInfos,
 		})
 
 		return &dhtQueryResult{closerPeers: clpeerInfos}, nil
@@ -465,16 +466,16 @@ func (dht *IpfsDHT) FindPeer(ctx context.Context, id peer.ID) (pstore.PeerInfo, 
 		return pstore.PeerInfo{}, routing.ErrNotFound
 	}
 
-	return result.peer, nil
+	return *result.peer, nil
 }
 
 // FindPeersConnectedToPeer searches for peers directly connected to a given peer.
-func (dht *IpfsDHT) FindPeersConnectedToPeer(ctx context.Context, id peer.ID) (<-chan pstore.PeerInfo, error) {
+func (dht *IpfsDHT) FindPeersConnectedToPeer(ctx context.Context, id peer.ID) (<-chan *pstore.PeerInfo, error) {
 
-	peerchan := make(chan pstore.PeerInfo, asyncQueryBuffer)
+	peerchan := make(chan *pstore.PeerInfo, asyncQueryBuffer)
 	peersSeen := make(map[peer.ID]struct{})
 
-	peers := dht.routingTable.NearestPeers(kb.ConvertPeerID(id), KValue)
+	peers := dht.routingTable.NearestPeers(kb.ConvertPeerID(id), AlphaValue)
 	if len(peers) == 0 {
 		return nil, kb.ErrLookupFailure
 	}
@@ -487,7 +488,7 @@ func (dht *IpfsDHT) FindPeersConnectedToPeer(ctx context.Context, id peer.ID) (<
 			return nil, err
 		}
 
-		var clpeers []pstore.PeerInfo
+		var clpeers []*pstore.PeerInfo
 		closer := pmes.GetCloserPeers()
 		for _, pbp := range closer {
 			pi := pb.PBPeerToPeerInfo(pbp)
