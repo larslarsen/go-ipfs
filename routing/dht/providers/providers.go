@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/ipfs/go-ipfs/routing/dht/util"
 	ds "gx/ipfs/QmRWDav6mzWseLWeYfVd5fvUKiVe9xNH29YfMF438fG364/go-datastore"
 	dsq "gx/ipfs/QmRWDav6mzWseLWeYfVd5fvUKiVe9xNH29YfMF438fG364/go-datastore/query"
 	goprocess "gx/ipfs/QmSF8fPo3jgVBAy8fpdjjYqgG87dkJgUprRBHRd2tmfgpP/goprocess"
@@ -283,7 +284,7 @@ func (pm *ProviderManager) run() {
 				}
 				var filtered []peer.ID
 				for p, t := range provs.set {
-					if time.Now().Sub(t) > ProvideValidity {
+					if (time.Now().Sub(t) > ProvideValidity && !util.IsPointer(p)) ||  (time.Now().Sub(t) > util.PointerValidity && util.IsPointer(p)){
 						delete(provs.set, p)
 					} else {
 						filtered = append(filtered, p)
