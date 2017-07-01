@@ -19,6 +19,7 @@ import (
 	kb "gx/ipfs/QmaQG6fJdzn2532WHoPdVwKqftXr6iCSr5NtWyGi1BHytT/go-libp2p-kbucket"
 	peer "gx/ipfs/QmdS9KpbDyPrieswibZhkod1oXqRwZJrUPzxCofAMWpFGq/go-libp2p-peer"
 	pset "gx/ipfs/QmdS9KpbDyPrieswibZhkod1oXqRwZJrUPzxCofAMWpFGq/go-libp2p-peer/peerset"
+	"github.com/OpenBazaar/go-ipfs/routing/dht/util"
 )
 
 // asyncQueryBuffer is the size of buffered channels in async queries. This
@@ -88,7 +89,7 @@ func (dht *IpfsDHT) GetValue(ctx context.Context, key string) ([]byte, error) {
 	ctx, cancel := context.WithTimeout(ctx, time.Minute)
 	defer cancel()
 
-	vals, err := dht.GetValues(ctx, key, 16)
+	vals, err := dht.GetValues(ctx, key, util.QuerySize)
 	if err != nil {
 		return nil, err
 	}
