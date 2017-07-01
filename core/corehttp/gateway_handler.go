@@ -22,7 +22,7 @@ import (
 	"github.com/ipfs/go-ipfs/routing/dht"
 	path "github.com/ipfs/go-ipfs/path"
 	proto "gx/ipfs/QmZ4Qi3GaRbjcx28Sme5eMH7RQjGkt8wHxt2a65oLaeFEV/gogo-protobuf/proto"
-	recpb "gx/ipfs/QmWYCqr6UDqqD1bfRybaAPtbAqcN3TSJpveaBXMwbQ3ePZ/go-libp2p-record"
+	recpb "gx/ipfs/QmWYCqr6UDqqD1bfRybaAPtbAqcN3TSJpveaBXMwbQ3ePZ/go-libp2p-record/pb"
 
 	namepb "github.com/ipfs/go-ipfs/namesys/pb"
 	"github.com/ipfs/go-ipfs/thirdparty/ds-help"
