@@ -26,9 +26,9 @@ import (
 
 	ds "gx/ipfs/QmRWDav6mzWseLWeYfVd5fvUKiVe9xNH29YfMF438fG364/go-datastore"
 	dssync "gx/ipfs/QmRWDav6mzWseLWeYfVd5fvUKiVe9xNH29YfMF438fG364/go-datastore/sync"
-	cid "gx/ipfs/QmV5gPoRsjN1Gid3LMdNZTyfCtP2DsvqEbMAmz82RmmiGk/go-cid"
-	node "gx/ipfs/QmYDscK7dmdo2GZ9aumS8s5auUUAH5mR1jvj5pYhWusfK7/go-ipld-node"
-	u "gx/ipfs/QmZuY8aV7zbNXVy6DyN9SmnuH3o9nG852F4aTiSBpts8d1/go-ipfs-util"
+	u "gx/ipfs/QmWbjfz3u6HkAdPh34dgPchGbQjob6LXLhAeCGii2TX69n/go-ipfs-util"
+	cid "gx/ipfs/QmYhQaCYEcaPPjxJX7YcPcVKkQfRy6sJ7B3XmGFk82XYdQ/go-cid"
+	node "gx/ipfs/Qmb3Hm9QDFmfYuET4pu7Kyg8JV78jFa1nvZx5vnCZsK4ck/go-ipld-format"
 )
 
 func emptyDirNode() *dag.ProtoNode {
@@ -396,6 +396,9 @@ func TestMfsFile(t *testing.T) {
 
 	// assert size is as expected
 	size, err := fi.Size()
+	if err != nil {
+		t.Fatal(err)
+	}
 	if size != int64(fisize) {
 		t.Fatal("size isnt correct")
 	}
@@ -419,12 +422,15 @@ func TestMfsFile(t *testing.T) {
 
 	// make sure size hasnt changed
 	size, err = wfd.Size()
+	if err != nil {
+		t.Fatal(err)
+	}
 	if size != int64(fisize) {
 		t.Fatal("size isnt correct")
 	}
 
 	// seek back to beginning
-	ns, err := wfd.Seek(0, os.SEEK_SET)
+	ns, err := wfd.Seek(0, io.SeekStart)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -561,13 +567,9 @@ func actorMakeFile(d *Directory) error {
 		return err
 	}
 
-	err = wfd.Close()
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return wfd.Close()
 }
+
 func actorMkdir(d *Directory) error {
 	d, err := randomWalk(d, rand.Intn(7))
 	if err != nil {
@@ -575,31 +577,8 @@ func actorMkdir(d *Directory) error {
 	}
 
 	_, err = d.Mkdir(randomName())
-	if err != nil {
-		return err
-	}
 
-	return nil
-}
-
-func actorRemoveFile(d *Directory) error {
-	d, err := randomWalk(d, rand.Intn(7))
-	if err != nil {
-		return err
-	}
-
-	ents, err := d.List(context.Background())
-	if err != nil {
-		return err
-	}
-
-	if len(ents) == 0 {
-		return nil
-	}
-
-	re := ents[rand.Intn(len(ents))]
-
-	return d.Unlink(re.Name)
+	return err
 }
 
 func randomFile(d *Directory) (*File, error) {
@@ -895,7 +874,7 @@ func readFile(rt *Root, path string, offset int64, buf []byte) error {
 		return err
 	}
 
-	_, err = fd.Seek(offset, os.SEEK_SET)
+	_, err = fd.Seek(offset, io.SeekStart)
 	if err != nil {
 		return err
 	}

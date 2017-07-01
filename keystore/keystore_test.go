@@ -7,7 +7,7 @@ import (
 	"sort"
 	"testing"
 
-	ci "gx/ipfs/QmPGxZ1DP2w45WcogpW1h43BvseXbfke9N91qotpoQcUeS/go-libp2p-crypto"
+	ci "gx/ipfs/QmP1DfoUjiWH2ZBo1PBH6FupdBucbDepx3HpWmEY6JMUpY/go-libp2p-crypto"
 )
 
 type rr struct{}
@@ -79,6 +79,22 @@ func TestKeystoreBasics(t *testing.T) {
 	}
 
 	if err := assertDirContents(tdir, []string{"foo", "bar"}); err != nil {
+		t.Fatal(err)
+	}
+
+	exist, err := ks.Has("foo")
+	if !exist {
+		t.Fatal("should know it has a key named foo")
+	}
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	exist, err = ks.Has("nonexistingkey")
+	if exist {
+		t.Fatal("should know it doesn't have a key named nonexistingkey")
+	}
+	if err != nil {
 		t.Fatal(err)
 	}
 

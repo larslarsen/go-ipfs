@@ -8,22 +8,17 @@ import (
 	repo "github.com/ipfs/go-ipfs/repo"
 	supernode "github.com/ipfs/go-ipfs/routing/supernode"
 	gcproxy "github.com/ipfs/go-ipfs/routing/supernode/proxy"
+	routing "gx/ipfs/QmNdaQ8itUU9jEZUwTsG4gHMaPmRfi6FEe89QjQAFbep3M/go-libp2p-routing"
 	ds "gx/ipfs/QmRWDav6mzWseLWeYfVd5fvUKiVe9xNH29YfMF438fG364/go-datastore"
-	routing "gx/ipfs/QmUc6twRJRE9MNrUGd8eo9WjHHxebGppdZfptGCASkR7fF/go-libp2p-routing"
-	"gx/ipfs/QmXzeAcmKDTfNZQBiyF22hQKuTK7P5z6MBBQLTk9bbiSUc/go-libp2p-host"
-	pstore "gx/ipfs/Qme1g4e3m2SmdiSGGU3vSWmUStwUjc5oECnEriaK9Xa1HU/go-libp2p-peerstore"
+	"gx/ipfs/QmUywuGNZoUKV8B9iyvup9bPkLiMrhTsyVMkeSXW5VxAfC/go-libp2p-host"
+	pstore "gx/ipfs/QmXZSd1qR5BxZkPyuwfT5jpqQFScZccoZvDneXsKzCNHWX/go-libp2p-peerstore"
 )
 
 // NB: DHT option is included in the core to avoid 1) because it's a sane
 // default and 2) to avoid a circular dependency (it needs to be referenced in
 // the core if it's going to be the default)
 
-var (
-	errHostMissing      = errors.New("supernode routing client requires a Host component")
-	errIdentityMissing  = errors.New("supernode routing server requires a peer ID identity")
-	errPeerstoreMissing = errors.New("supernode routing server requires a peerstore")
-	errServersMissing   = errors.New("supernode routing client requires at least 1 server peer")
-)
+var errServersMissing = errors.New("supernode routing client requires at least 1 server peer")
 
 // SupernodeServer returns a configuration for a routing server that stores
 // routing records to the provided datastore. Only routing records are store in

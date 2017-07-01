@@ -9,12 +9,11 @@ import (
 	dshelp "github.com/ipfs/go-ipfs/thirdparty/ds-help"
 
 	datastore "gx/ipfs/QmRWDav6mzWseLWeYfVd5fvUKiVe9xNH29YfMF438fG364/go-datastore"
-	peer "gx/ipfs/QmWUswjn261LSyVxWAEpMVtPdy8zmKBJJfBpG3Qdpa8ZsE/go-libp2p-peer"
+	dhtpb "gx/ipfs/QmRmroYSdievxnjiuy99C8BzShNstdEWcEF3LQHF7fUbez/go-libp2p-kad-dht/pb"
+	pb "gx/ipfs/QmWYCqr6UDqqD1bfRybaAPtbAqcN3TSJpveaBXMwbQ3ePZ/go-libp2p-record/pb"
+	pstore "gx/ipfs/QmXZSd1qR5BxZkPyuwfT5jpqQFScZccoZvDneXsKzCNHWX/go-libp2p-peerstore"
 	proto "gx/ipfs/QmZ4Qi3GaRbjcx28Sme5eMH7RQjGkt8wHxt2a65oLaeFEV/gogo-protobuf/proto"
-	dhtpb "gx/ipfs/QmaoxFZcgwGyoB57pCYQobejLoNgqaA6trr3zxxrbm4UXe/go-libp2p-kad-dht/pb"
-	record "gx/ipfs/QmcTnycWsBgvNYFYgWdWi8SRDCeevG8HBUQHkvg4KLXUsW/go-libp2p-record"
-	pb "gx/ipfs/QmcTnycWsBgvNYFYgWdWi8SRDCeevG8HBUQHkvg4KLXUsW/go-libp2p-record/pb"
-	pstore "gx/ipfs/Qme1g4e3m2SmdiSGGU3vSWmUStwUjc5oECnEriaK9Xa1HU/go-libp2p-peerstore"
+	peer "gx/ipfs/QmdS9KpbDyPrieswibZhkod1oXqRwZJrUPzxCofAMWpFGq/go-libp2p-peer"
 )
 
 // Server handles routing queries using a database backend
@@ -140,10 +139,7 @@ func putRoutingRecord(ds datastore.Datastore, k string, value *pb.Record) error 
 	}
 	dskey := dshelp.NewKeyFromBinary([]byte(k))
 	// TODO namespace
-	if err := ds.Put(dskey, data); err != nil {
-		return err
-	}
-	return nil
+	return ds.Put(dskey, data)
 }
 
 func putRoutingProviders(ds datastore.Datastore, k string, newRecords []*dhtpb.Message_Peer) error {
@@ -203,21 +199,4 @@ func getRoutingProviders(ds datastore.Datastore, k string) ([]*dhtpb.Message_Pee
 
 func providerKey(k string) datastore.Key {
 	return datastore.KeyWithNamespaces([]string{"routing", "providers", k})
-}
-
-func verify(ps pstore.Peerstore, r *pb.Record) error {
-	v := make(record.Validator)
-	v["pk"] = record.PublicKeyValidator
-	p := peer.ID(r.GetAuthor())
-	pk := ps.PubKey(p)
-	if pk == nil {
-		return fmt.Errorf("do not have public key for %s", p)
-	}
-	if err := record.CheckRecordSig(r, pk); err != nil {
-		return err
-	}
-	if err := v.VerifyRecord(r); err != nil {
-		return err
-	}
-	return nil
 }

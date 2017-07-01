@@ -26,28 +26,23 @@ import (
 	config "github.com/ipfs/go-ipfs/repo/config"
 	fsrepo "github.com/ipfs/go-ipfs/repo/fsrepo"
 
-	ma "gx/ipfs/QmSWLfmj5frN9xVLMMN846dMDriy5wN5jeghUm7aTW3DAG/go-multiaddr"
 	logging "gx/ipfs/QmSpJByNKFX1sCsHBEp3R73FL4NF6FnQTEGyNAXHm2GS52/go-log"
-	manet "gx/ipfs/QmVCNGTyD4EkvNYaAp253uMQ9Rjsjy2oGMvcdJJUoVRfja/go-multiaddr-net"
-	loggables "gx/ipfs/QmXs1igHHEaUmMxKtbP8Z9wTjitQ75sqxaKQP4QgnLN4nn/go-libp2p-loggables"
+	loggables "gx/ipfs/QmVesPmqbPp7xRGyY96tnBwzDtVV1nqv4SCVxo5zCqKyH8/go-libp2p-loggables"
+	u "gx/ipfs/QmWbjfz3u6HkAdPh34dgPchGbQjob6LXLhAeCGii2TX69n/go-ipfs-util"
 	osh "gx/ipfs/QmXuBJ7DR6k3rmUEKtvVMhwjmXDuJgXXPUt4LQXKBMsU93/go-os-helper"
-	u "gx/ipfs/QmZuY8aV7zbNXVy6DyN9SmnuH3o9nG852F4aTiSBpts8d1/go-ipfs-util"
+	ma "gx/ipfs/QmcyqRMCAXVtYPS4DiBrA7sezL9rRGfW8Ctx7cywL4TXJj/go-multiaddr"
+	manet "gx/ipfs/Qmf1Gq7N45Rpuw7ev47uWgH6dLPtdnvcMRNPkVBwqjLJg2/go-multiaddr-net"
 )
 
 // log is the command logger
 var log = logging.Logger("cmd/ipfs")
 
-var (
-	errUnexpectedApiOutput = errors.New("api returned unexpected output")
-	errApiVersionMismatch  = errors.New("api version mismatch")
-	errRequestCanceled     = errors.New("request canceled")
-)
+var errRequestCanceled = errors.New("request canceled")
 
 const (
 	EnvEnableProfiling = "IPFS_PROF"
 	cpuProfile         = "ipfs.cpuprof"
 	heapProfile        = "ipfs.memprof"
-	errorFormat        = "ERROR: %v\n\n"
 )
 
 type cmdInvocation struct {
@@ -492,7 +487,7 @@ func startProfiling() (func(), error) {
 	}
 	pprof.StartCPUProfile(ofi)
 	go func() {
-		for _ = range time.NewTicker(time.Second * 30).C {
+		for range time.NewTicker(time.Second * 30).C {
 			err := writeHeapProfileToFile()
 			if err != nil {
 				log.Error(err)
@@ -546,7 +541,7 @@ func (ih *IntrHandler) Handle(handler func(count int, ih *IntrHandler), sigs ...
 	go func() {
 		defer ih.wg.Done()
 		count := 0
-		for _ = range ih.sig {
+		for range ih.sig {
 			count++
 			handler(count, ih)
 		}

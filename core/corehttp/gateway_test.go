@@ -19,9 +19,12 @@ import (
 	config "github.com/ipfs/go-ipfs/repo/config"
 	testutil "github.com/ipfs/go-ipfs/thirdparty/testutil"
 
-	ci "gx/ipfs/QmPGxZ1DP2w45WcogpW1h43BvseXbfke9N91qotpoQcUeS/go-libp2p-crypto"
-	id "gx/ipfs/QmeWJwi61vii5g8zQUB9UGegfUbmhTKHgeDFP9XuSp5jZ4/go-libp2p/p2p/protocol/identify"
+	ci "gx/ipfs/QmP1DfoUjiWH2ZBo1PBH6FupdBucbDepx3HpWmEY6JMUpY/go-libp2p-crypto"
+	id "gx/ipfs/QmQA5mdxru8Bh6dpC9PJfSkumqnmHgJX7knxSgBo5Lpime/go-libp2p/p2p/protocol/identify"
 )
+
+// `ipfs object new unixfs-dir`
+var emptyDir = "/ipfs/QmUNLLsPACCz1vLxQVkXqqLX5R1X345qqfHbsf67hvA3Nn"
 
 type mockNamesys map[string]path.Path
 
@@ -136,7 +139,7 @@ func TestGatewayGet(t *testing.T) {
 		{"localhost:5001", "/", http.StatusNotFound, "404 page not found\n"},
 		{"localhost:5001", "/" + k, http.StatusNotFound, "404 page not found\n"},
 		{"localhost:5001", "/ipfs/" + k, http.StatusOK, "fnord"},
-		{"localhost:5001", "/ipns/nxdomain.example.com", http.StatusNotFound, "ipfs cat /ipns/nxdomain.example.com: " + namesys.ErrResolveFailed.Error() + "\n"},
+		{"localhost:5001", "/ipns/nxdomain.example.com", http.StatusNotFound, "ipfs resolve -r /ipns/nxdomain.example.com: " + namesys.ErrResolveFailed.Error() + "\n"},
 		{"localhost:5001", "/ipns/example.com", http.StatusOK, "fnord"},
 		{"example.com", "/", http.StatusOK, "fnord"},
 	} {
@@ -424,11 +427,6 @@ func TestIPNSHostnameBacklinks(t *testing.T) {
 	req.Host = "example.net"
 	req.Header.Set("X-Ipfs-Gateway-Prefix", "/bad-prefix")
 
-	res, err = doWithoutRedirect(req)
-	if err != nil {
-		t.Fatal(err)
-	}
-
 	// make request to directory listing with evil prefix
 	req, err = http.NewRequest("GET", ts.URL, nil)
 	if err != nil {
@@ -458,6 +456,53 @@ func TestIPNSHostnameBacklinks(t *testing.T) {
 	}
 	if !strings.Contains(s, "<a href=\"/file.txt\">") {
 		t.Fatalf("expected file in directory listing")
+	}
+}
+
+func TestCacheControlImmutable(t *testing.T) {
+	ts, _ := newTestServerAndNode(t, nil)
+	t.Logf("test server url: %s", ts.URL)
+	defer ts.Close()
+
+	req, err := http.NewRequest("GET", ts.URL+emptyDir+"/", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	res, err := doWithoutRedirect(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// check the immutable tag isn't set
+	hdrs, ok := res.Header["Cache-Control"]
+	if ok {
+		for _, hdr := range hdrs {
+			if strings.Contains(hdr, "immutable") {
+				t.Fatalf("unexpected Cache-Control: immutable on directory listing: %s", hdr)
+			}
+		}
+	}
+}
+
+func TestGoGetSupport(t *testing.T) {
+	ts, _ := newTestServerAndNode(t, nil)
+	t.Logf("test server url: %s", ts.URL)
+	defer ts.Close()
+
+	// mimic go-get
+	req, err := http.NewRequest("GET", ts.URL+emptyDir+"?go-get=1", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	res, err := doWithoutRedirect(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if res.StatusCode != 200 {
+		t.Errorf("status is %d, expected 200", res.StatusCode)
 	}
 }
 

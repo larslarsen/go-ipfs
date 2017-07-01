@@ -1,5 +1,132 @@
 # go-ipfs changelog
 
+### 0.4.10 - 2017-06-27
+
+Ipfs 0.4.10 is a patch release that contains several exciting new features,
+bugfixes and general improvements. Including new commands, easier corruption
+recovery, and a generally cleaner codebase.
+
+The `ipfs pin` command has two new subcommands, `verify` and `update`. `ipfs
+pin verify` is used to scan the repo for pinned object graphs and check their
+integrity. Any issues are reported back with helpful error text to make error
+recovery simpler.  This subcommand was added to help recover from datastore
+corruptions, particularly if using the experimental filestore and accidentally
+deleting tracked files.
+`ipfs pin update` was added to make the task of keeping a large, frequently
+changing object graph pinned. Previously users had to call `ipfs pin rm` on the
+old pin, and `ipfs pin add` on the new one. The 'new' `ipfs pin add` call would
+be very expensive as it would need to verify the entirety of the graph again.
+The `ipfs pin update` command takes shortcuts, portions of the graph that were
+covered under the old pin are assumed to be fine, and the command skips
+checking them.
+
+Next up, we have finally implemented an `ipfs shutdown` command so users can
+shut down their ipfs daemons via the API. This is especially useful on
+platforms that make it difficult to control processes (Android, for example),
+and is also useful when needing to shut down a node remotely and you do not
+have access to the machine itself.
+
+`ipfs add` has gained a new flag; the `--hash` flag allows you to select which
+hash function to use and we have given it the ability to select `blake2b-256`.
+This pushes us one step closer to shifting over to using blake2b as the
+default. Blake2b is significantly faster than sha2-256, and also is conjectured
+to provide superior security.
+
+We have also finally implemented a very early (and experimental) `ipfs p2p`.
+This command and its subcommands will allow you to open up arbitrary streams to
+other ipfs peers through libp2p. The interfaces are a little bit clunky right
+now, but shouldn't get in the way of anyone wanting to try building a fully
+peer to peer application on top of ipfs and libp2p. For more info on this
+command, to ask questions, or to provide feedback, head over to the [feedback
+issue](https://github.com/ipfs/go-ipfs/issues/3994) for the command.
+
+A few other subcommands and flags were added around the API, as well as many
+other requested improvements. See below for the full list of changes.
+
+
+- Features
+  - Add support for specifying the hash function in `ipfs add` ([ipfs/go-ipfs#3919](https://github.com/ipfs/go-ipfs/pull/3919))
+  - Implement `ipfs key {rm, rename}` ([ipfs/go-ipfs#3892](https://github.com/ipfs/go-ipfs/pull/3892))
+  - Implement `ipfs shutdown` command ([ipfs/go-ipfs#3884](https://github.com/ipfs/go-ipfs/pull/3884))
+  - Implement `ipfs pin update` ([ipfs/go-ipfs#3846](https://github.com/ipfs/go-ipfs/pull/3846))
+  - Implement `ipfs pin verify` ([ipfs/go-ipfs#3843](https://github.com/ipfs/go-ipfs/pull/3843))
+  - Implemented experimental p2p commands ([ipfs/go-ipfs#3943](https://github.com/ipfs/go-ipfs/pull/3943))
+- Improvements
+  - Add MaxStorage field to output of "repo stat" ([ipfs/go-ipfs#3915](https://github.com/ipfs/go-ipfs/pull/3915))
+  - Add Suborigin header to gateway responses ([ipfs/go-ipfs#3914](https://github.com/ipfs/go-ipfs/pull/3914))
+  - Add "--file-order" option to "filestore ls" and "verify" ([ipfs/go-ipfs#3938](https://github.com/ipfs/go-ipfs/pull/3938))
+  - Allow selecting ipns keys by Peer ID ([ipfs/go-ipfs#3882](https://github.com/ipfs/go-ipfs/pull/3882))
+  - Don't redirect to trailing slash in gateway for `go get` ([ipfs/go-ipfs#3963](https://github.com/ipfs/go-ipfs/pull/3963))
+  - Add 'ipfs dht findprovs --num-providers' to allow choosing number of providers to find ([ipfs/go-ipfs#3966](https://github.com/ipfs/go-ipfs/pull/3966))
+  - Make sure all keystore keys get republished ([ipfs/go-ipfs#3951](https://github.com/ipfs/go-ipfs/pull/3951))
+- Documentation
+  - Adding documentation on PubSub encodedings ([ipfs/go-ipfs#3909](https://github.com/ipfs/go-ipfs/pull/3909))
+  - Change 'neccessary' to 'necessary' ([ipfs/go-ipfs#3941](https://github.com/ipfs/go-ipfs/pull/3941))
+  - README.md: add Nix to the linux package managers ([ipfs/go-ipfs#3939](https://github.com/ipfs/go-ipfs/pull/3939))
+  - More verbose errors in filestore ([ipfs/go-ipfs#3964](https://github.com/ipfs/go-ipfs/pull/3964))
+- Bugfixes
+  - Fix typo in message when file size check fails ([ipfs/go-ipfs#3895](https://github.com/ipfs/go-ipfs/pull/3895))
+  - Clean up bitswap ledgers when disconnecting ([ipfs/go-ipfs#3437](https://github.com/ipfs/go-ipfs/pull/3437))
+  - Make odds of 'process added after close' panic less likely ([ipfs/go-ipfs#3940](https://github.com/ipfs/go-ipfs/pull/3940))
+- General Changes and Refactorings
+  - Remove 'ipfs diag net' from codebase ([ipfs/go-ipfs#3916](https://github.com/ipfs/go-ipfs/pull/3916))
+  - Update to dht code with provide announce option ([ipfs/go-ipfs#3928](https://github.com/ipfs/go-ipfs/pull/3928))
+  - Apply the megacheck code vetting tool ([ipfs/go-ipfs#3949](https://github.com/ipfs/go-ipfs/pull/3949))
+  - Expose port 8081 in docker container for /ws listener ([ipfs/go-ipfs#3954](https://github.com/ipfs/go-ipfs/pull/3954))
+
+### 0.4.9 - 2017-04-30
+
+Ipfs 0.4.9 is a maintenance release that contains several useful bugfixes and
+improvements. Notably, `ipfs add` has gained the ability to select which CID
+version will be output. The common ipfs hash that looks like this:
+`QmRjNgF2mRLDT8AzCPsQbw1EYF2hDTFgfUmJokJPhCApYP` is a multihash. Multihashes
+allow us to specify the hashing algorithm that was used to verify the data, but
+it doesn't give us any indication of what format that data might be. To address
+that issue, we are adding another couple of bytes to the prefix that will allow us
+to indicate the format of the data referenced by the hash. This new format is
+called a Content ID, or CID for short. The previous bare multihashes will still
+be fully supported throughout the entire application as CID version 0. The new
+format with the type information will be CID version 1. To give an example,
+the content referenced by the hash above is "Hello Ipfs!". That same content,
+in the same format (dag-protobuf) using CIDv1 is
+`zb2rhkgXZVkT2xvDiuUsJENPSbWJy7fdYnsboLBzzEjjZMRoG`.
+
+CIDv1 hashes are supported in ipfs versions back to 0.4.5. Nodes running 0.4.4
+and older will not be able to load content via CIDv1 and we recommend that they
+update to a newer version.
+
+There are many other use cases for CIDs. Plugins can be written to
+allow ipfs to natively address content from any other merkletree based system,
+such as git, bitcoin, zcash and ethereum -- a few systems we've already started work on.
+
+Aside from the CID flag, there were many other changes as noted below:
+
+- Features
+  - Add support for using CidV1 in 'ipfs add' ([ipfs/go-ipfs#3743](https://github.com/ipfs/go-ipfs/pull/3743))
+- Improvements
+  - Use CID as an ETag strong validator ([ipfs/go-ipfs#3869](https://github.com/ipfs/go-ipfs/pull/3869))
+  - Update go-multihash with keccak and bitcoin hashes ([ipfs/go-ipfs#3833](https://github.com/ipfs/go-ipfs/pull/3833))
+  - Update go-is-domain to contain new gTLD ([ipfs/go-ipfs#3873](https://github.com/ipfs/go-ipfs/pull/3873))
+  - Periodically flush cached directories during ipfs add ([ipfs/go-ipfs#3888](https://github.com/ipfs/go-ipfs/pull/3888))
+  - improved gateway directory listing for sharded nodes ([ipfs/go-ipfs#3897](https://github.com/ipfs/go-ipfs/pull/3897))
+- Documentation
+  - Change issue template to use Severity instead of Priority ([ipfs/go-ipfs#3834](https://github.com/ipfs/go-ipfs/pull/3834))
+  - Fix link to commit hook script in contribute.md ([ipfs/go-ipfs#3863](https://github.com/ipfs/go-ipfs/pull/3863))
+  - Fix install_unsupported for openbsd, add docs ([ipfs/go-ipfs#3880](https://github.com/ipfs/go-ipfs/pull/3880))
+- Bugfixes
+  - Fix wanlist typo in prometheus metric name ([ipfs/go-ipfs#3841](https://github.com/ipfs/go-ipfs/pull/3841))
+  - Fix `make install` not using ldflags for git hash ([ipfs/go-ipfs#3838](https://github.com/ipfs/go-ipfs/pull/3838))
+  - Fix `make install` not installing dependencies ([ipfs/go-ipfs#3848](https://github.com/ipfs/go-ipfs/pull/3848))
+  - Fix erroneous Cache-Control: immutable on dir listings ([ipfs/go-ipfs#3870](https://github.com/ipfs/go-ipfs/pull/3870))
+  - Fix bitswap accounting of 'BytesSent' in ledger ([ipfs/go-ipfs#3876](https://github.com/ipfs/go-ipfs/pull/3876))
+  - Fix gateway handling of sharded directories ([ipfs/go-ipfs#3889](https://github.com/ipfs/go-ipfs/pull/3889))
+  - Fix sharding memory growth, and fix resolver for unixfs paths ([ipfs/go-ipfs#3890](https://github.com/ipfs/go-ipfs/pull/3890))
+- General Changes and Refactorings
+  - Use ctx var consistently in daemon.go ([ipfs/go-ipfs#3864](https://github.com/ipfs/go-ipfs/pull/3864))
+  - Handle 404 correctly in dist_get tool ([ipfs/go-ipfs#3879](https://github.com/ipfs/go-ipfs/pull/3879))
+- Testing
+  - Fix go fuse tests ([ipfs/go-ipfs#3840](https://github.com/ipfs/go-ipfs/pull/3840))
+
 ### 0.4.8 - 2017-03-29
 
 Ipfs 0.4.8 brings with it several improvements, bugfixes, documentation

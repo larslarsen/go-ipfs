@@ -16,7 +16,7 @@ package dht_pb
 import proto "gx/ipfs/QmZ4Qi3GaRbjcx28Sme5eMH7RQjGkt8wHxt2a65oLaeFEV/gogo-protobuf/proto"
 import fmt "fmt"
 import math "math"
-import record_pb "gx/ipfs/QmcTnycWsBgvNYFYgWdWi8SRDCeevG8HBUQHkvg4KLXUsW/go-libp2p-record/pb"
+import record_pb "gx/ipfs/QmWYCqr6UDqqD1bfRybaAPtbAqcN3TSJpveaBXMwbQ3ePZ/go-libp2p-record/pb"
 
 // Reference imports to suppress errors if they are not otherwise used.
 var _ = proto.Marshal
@@ -211,4 +211,11 @@ func (m *Message_Peer) GetConnection() Message_ConnectionType {
 		return *m.Connection
 	}
 	return Message_NOT_CONNECTED
+}
+
+func init() {
+	proto.RegisterType((*Message)(nil), "dht.pb.Message")
+	proto.RegisterType((*Message_Peer)(nil), "dht.pb.Message.Peer")
+	proto.RegisterEnum("dht.pb.Message_MessageType", Message_MessageType_name, Message_MessageType_value)
+	proto.RegisterEnum("dht.pb.Message_ConnectionType", Message_ConnectionType_name, Message_ConnectionType_value)
 }

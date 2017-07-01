@@ -2,7 +2,7 @@ package util
 
 import (
 	"time"
-	peer "gx/ipfs/QmWUswjn261LSyVxWAEpMVtPdy8zmKBJJfBpG3Qdpa8ZsE/go-libp2p-peer"
+	peer "gx/ipfs/QmdS9KpbDyPrieswibZhkod1oXqRwZJrUPzxCofAMWpFGq/go-libp2p-peer"
 )
 
 /*
@@ -30,3 +30,5 @@ const MAGIC string = "000000000000000000000000"
 
 // Max record age is increased to one week
 const MaxRecordAge = time.Hour * 24 * 7
+
+// The provider manage in dht.go must use the non-gx package

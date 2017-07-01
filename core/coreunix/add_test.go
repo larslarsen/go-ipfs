@@ -22,7 +22,7 @@ import (
 	pi "github.com/ipfs/go-ipfs/thirdparty/posinfo"
 	"github.com/ipfs/go-ipfs/thirdparty/testutil"
 
-	cid "gx/ipfs/QmV5gPoRsjN1Gid3LMdNZTyfCtP2DsvqEbMAmz82RmmiGk/go-cid"
+	cid "gx/ipfs/QmYhQaCYEcaPPjxJX7YcPcVKkQfRy6sJ7B3XmGFk82XYdQ/go-cid"
 )
 
 func TestAddRecursive(t *testing.T) {
@@ -120,14 +120,10 @@ func TestAddGCLive(t *testing.T) {
 	pipew.Close()
 
 	// receive next object from adder
-	select {
-	case o := <-out:
-		addedHashes[o.(*AddedObject).Hash] = struct{}{}
-	}
+	o := <-out
+	addedHashes[o.(*AddedObject).Hash] = struct{}{}
 
-	select {
-	case <-gcstarted:
-	}
+	<-gcstarted
 
 	for r := range gcout {
 		if r.Error != nil {
@@ -197,7 +193,7 @@ func testAddWPosInfo(t *testing.T, rawLeaves bool) {
 			t.Fatal(err)
 		}
 	}()
-	for _ = range adder.Out {
+	for range adder.Out {
 	}
 
 	exp := 0

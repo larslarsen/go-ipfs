@@ -9,21 +9,21 @@ import (
 	"testing"
 	"time"
 
-	pb "gx/ipfs/QmaoxFZcgwGyoB57pCYQobejLoNgqaA6trr3zxxrbm4UXe/go-libp2p-kad-dht/pb"
+	pb "gx/ipfs/QmRmroYSdievxnjiuy99C8BzShNstdEWcEF3LQHF7fUbez/go-libp2p-kad-dht/pb"
 
-	netutil "gx/ipfs/QmNqvnxGtJBaKQnenD6uboNGdjSjHGmZGRxMHEevKJe5Pk/go-libp2p-netutil"
+	bhost "gx/ipfs/QmQA5mdxru8Bh6dpC9PJfSkumqnmHgJX7knxSgBo5Lpime/go-libp2p/p2p/host/basic"
 	ds "gx/ipfs/QmRWDav6mzWseLWeYfVd5fvUKiVe9xNH29YfMF438fG364/go-datastore"
 	dssync "gx/ipfs/QmRWDav6mzWseLWeYfVd5fvUKiVe9xNH29YfMF438fG364/go-datastore/sync"
-	ma "gx/ipfs/QmSWLfmj5frN9xVLMMN846dMDriy5wN5jeghUm7aTW3DAG/go-multiaddr"
-	ci "gx/ipfs/QmSwXLW21S3TsFHsNELc4a4Y7Kp8wToqnBBXWYvggBVLQY/go-testutil/ci"
-	travisci "gx/ipfs/QmSwXLW21S3TsFHsNELc4a4Y7Kp8wToqnBBXWYvggBVLQY/go-testutil/ci/travis"
-	kb "gx/ipfs/QmTxn7JEA8DiBvd9vVzErAzadHn6TwjCKTjjUfPyRH9wjZ/go-libp2p-kbucket"
-	cid "gx/ipfs/QmV5gPoRsjN1Gid3LMdNZTyfCtP2DsvqEbMAmz82RmmiGk/go-cid"
-	peer "gx/ipfs/QmWUswjn261LSyVxWAEpMVtPdy8zmKBJJfBpG3Qdpa8ZsE/go-libp2p-peer"
-	u "gx/ipfs/QmZuY8aV7zbNXVy6DyN9SmnuH3o9nG852F4aTiSBpts8d1/go-ipfs-util"
-	record "gx/ipfs/QmcTnycWsBgvNYFYgWdWi8SRDCeevG8HBUQHkvg4KLXUsW/go-libp2p-record"
-	pstore "gx/ipfs/Qme1g4e3m2SmdiSGGU3vSWmUStwUjc5oECnEriaK9Xa1HU/go-libp2p-peerstore"
-	bhost "gx/ipfs/QmeWJwi61vii5g8zQUB9UGegfUbmhTKHgeDFP9XuSp5jZ4/go-libp2p/p2p/host/basic"
+	record "gx/ipfs/QmWYCqr6UDqqD1bfRybaAPtbAqcN3TSJpveaBXMwbQ3ePZ/go-libp2p-record"
+	u "gx/ipfs/QmWbjfz3u6HkAdPh34dgPchGbQjob6LXLhAeCGii2TX69n/go-ipfs-util"
+	pstore "gx/ipfs/QmXZSd1qR5BxZkPyuwfT5jpqQFScZccoZvDneXsKzCNHWX/go-libp2p-peerstore"
+	cid "gx/ipfs/QmYhQaCYEcaPPjxJX7YcPcVKkQfRy6sJ7B3XmGFk82XYdQ/go-cid"
+	netutil "gx/ipfs/Qma2j8dYePrvN5DoNgwh1uAuu3FFtEtrUQFmr737ws8nCp/go-libp2p-netutil"
+	kb "gx/ipfs/QmaQG6fJdzn2532WHoPdVwKqftXr6iCSr5NtWyGi1BHytT/go-libp2p-kbucket"
+	ma "gx/ipfs/QmcyqRMCAXVtYPS4DiBrA7sezL9rRGfW8Ctx7cywL4TXJj/go-multiaddr"
+	peer "gx/ipfs/QmdS9KpbDyPrieswibZhkod1oXqRwZJrUPzxCofAMWpFGq/go-libp2p-peer"
+	ci "gx/ipfs/QmdVnYKahrvndXhyreWhY8YT3a5chJoWv8b4wVyH9JG2KB/go-testutil/ci"
+	travisci "gx/ipfs/QmdVnYKahrvndXhyreWhY8YT3a5chJoWv8b4wVyH9JG2KB/go-testutil/ci/travis"
 )
 
 var testCaseValues = map[string][]byte{}
@@ -216,7 +216,7 @@ func TestProvides(t *testing.T) {
 
 	for _, k := range testCaseCids {
 		log.Debugf("announcing provider for %s", k)
-		if err := dhts[3].Provide(ctx, k); err != nil {
+		if err := dhts[3].Provide(ctx, k, true); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -243,6 +243,41 @@ func TestProvides(t *testing.T) {
 			}
 		case <-ctxT.Done():
 			t.Fatal("Did not get a provider back.")
+		}
+	}
+}
+
+func TestLocalProvides(t *testing.T) {
+	// t.Skip("skipping test to debug another")
+	ctx := context.Background()
+
+	_, _, dhts := setupDHTS(ctx, 4, t)
+	defer func() {
+		for i := 0; i < 4; i++ {
+			dhts[i].Close()
+			defer dhts[i].host.Close()
+		}
+	}()
+
+	connect(t, ctx, dhts[0], dhts[1])
+	connect(t, ctx, dhts[1], dhts[2])
+	connect(t, ctx, dhts[1], dhts[3])
+
+	for _, k := range testCaseCids {
+		log.Debugf("announcing provider for %s", k)
+		if err := dhts[3].Provide(ctx, k, false); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	time.Sleep(time.Millisecond * 10)
+
+	for _, c := range testCaseCids {
+		for i := 0; i < 3; i++ {
+			provs := dhts[i].providers.GetProviders(ctx, c)
+			if len(provs) > 0 {
+				t.Fatal("shouldnt know this")
+			}
 		}
 	}
 }
@@ -471,7 +506,7 @@ func TestProvidesMany(t *testing.T) {
 		providers[c.KeyString()] = dht.self
 
 		t.Logf("announcing provider for %s", c)
-		if err := dht.Provide(ctx, c); err != nil {
+		if err := dht.Provide(ctx, c, true); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -545,7 +580,7 @@ func TestProvidesAsync(t *testing.T) {
 	connect(t, ctx, dhts[1], dhts[2])
 	connect(t, ctx, dhts[1], dhts[3])
 
-	err := dhts[3].Provide(ctx, testCaseCids[0])
+	err := dhts[3].Provide(ctx, testCaseCids[0], true)
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -53,9 +53,6 @@ include $(dir)/Rules.mk
 dir := exchange/bitswap/message/pb
 include $(dir)/Rules.mk
 
-dir := diagnostics/pb
-include $(dir)/Rules.mk
-
 dir := pin/internal/pb
 include $(dir)/Rules.mk
 
@@ -69,7 +66,6 @@ include $(dir)/Rules.mk
 # -------------------- #
 #     core targets     #
 # -------------------- #
-
 
 build: $(TGT_BIN)
 .PHONY: build
@@ -99,19 +95,20 @@ nofuse: GOTAGS += nofuse
 nofuse: build
 .PHONY: nofuse
 
-install: $$(DEPS_GO)
-	go install $(go-flags-with-tags) ./cmd/ipfs
+install: cmd/ipfs-install
 .PHONY: install
 
 install_unsupported:
 	@echo "note: this command has yet to be tested to build in the system you are using"
 	@echo "installing gx"
-	go get -u github.com/whyrusleeping/gx
-	go get -u github.com/whyrusleeping/gx-go
+	go get -v -u github.com/whyrusleeping/gx
+	go get -v -u github.com/whyrusleeping/gx-go
+	@echo check gx and gx-go
+	gx -v && gx-go -v
 	@echo downloading dependencies
 	gx install --global
 	@echo "installing go-ipfs"
-	go install ./cmd/ipfs
+	go install -v -tags nofuse ./cmd/ipfs
 .PHONY: install_unsupported
 
 uninstall:
@@ -145,6 +142,7 @@ help:
 	@echo '  test_go_short'
 	@echo '  test_go_expensive'
 	@echo '  test_go_race'
+	@echo '  test_go_megacheck'	 - Run the `megacheck` vetting tool
 	@echo '  test_sharness_short'
 	@echo '  test_sharness_expensive'
 	@echo '  test_sharness_race'
