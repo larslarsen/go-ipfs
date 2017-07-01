@@ -27,7 +27,6 @@ func IsPointer(id peer.ID) bool {
 // Pointers are prefixed with this string
 const MAGIC string = "000000000000000000000000"
 
-
 // Max record age is increased to one week
 const MaxRecordAge = time.Hour * 24 * 7
 
