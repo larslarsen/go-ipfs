@@ -24,3 +24,5 @@ This fork is currently based on IPFS v0.4.10 with the following changes:
 - Remove private key check from config initialization as OpenBazaar doesn't store the private key in the config.
 - Bundled go-libp2p-kad-dht so we can modify protocol strings without maintaining another fork.
 - Add QuerySize paramter to IPNS config.
+- Gateway accepts providers.
+- Refactor bootstrap to run in separate goroutine with a done chan.
