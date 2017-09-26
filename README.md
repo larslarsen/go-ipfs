@@ -22,6 +22,7 @@ This fork is currently based on IPFS v0.4.11-rc2 with the following changes:
 - core/bootstrap.go add `DoneChan` to the bootstrap config which is closed when the inital bootstrap finishes. This is in place of blocking for the initial bootstrap.
 - core/commands/swarm.go Change the `swarm` `peers` output to []string from a private struct. The access control on the struct made the return unusable otherwise.
 - core/commands/ipns.go Initialize NewNameSystem with a NewDNSResolver().
+- core/commands/dht.go Swap out DHT import with DHT fork.
 - core/coreunix/add.go AddWithContext function modified to use CIDv1.
 
 Finally, we've had to patch go-multiaddr to handle CIDv1 in the /ipfs/ addr strings. We'll try to get this merged into the main repo.
