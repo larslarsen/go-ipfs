@@ -8,7 +8,7 @@ import (
 	cmds "github.com/ipfs/go-ipfs/commands"
 	namesys "github.com/ipfs/go-ipfs/namesys"
 	offline "github.com/ipfs/go-ipfs/routing/offline"
-	u "gx/ipfs/QmWbjfz3u6HkAdPh34dgPchGbQjob6LXLhAeCGii2TX69n/go-ipfs-util"
+	u "gx/ipfs/QmSU6eubNdhXjFBJBSksTp8kv8YRub8mGAPv8tVJHmL2EU/go-ipfs-util"
 )
 
 var IpnsCmd = &cmds.Command{
@@ -88,7 +88,7 @@ Resolve the value of a dnslink:
 		}
 
 		if nocache {
-			resolver = namesys.NewNameSystem(n.Routing, n.Repo.Datastore(), 0)
+			resolver = namesys.NewNameSystem(n.Routing, n.Repo.Datastore(), 0, namesys.NewDNSResolver())
 		}
 
 		var name string

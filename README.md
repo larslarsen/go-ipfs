@@ -8,21 +8,21 @@ It is not safe to run the main IPFS codebase in the OpenBazaar network as your n
 not be able to communicate with other OpenBazaar nodes.
 
 ## Diff
-This fork is currently based on IPFS v0.4.10 with the following changes:
+This fork is currently based on IPFS v0.4.11-rc2 with the following changes:
 
-- The `/ipfs/dht`, `/ipfs/bitswap/`, and `/ipfs/supernoderouting/` protocol strings have been changed to `/openbazaar/dht`, `/openbazaar/bitswap/`, and `/openbazaar/supernoderouting/` respectively. This keeps the OpenBazaar network from merging with the main IPFS network.
-- Changed the TTL of providers which use a magic number for an ID from 24 hours to 7 days. A longer TTL on certain data is needed for OpenBazaar's messaging system.
-- Accept providers whose peer ID does not match the ID of the sender. This, again, is needed for the messaging system.
-- Change the `swarm` `peers` output to []string from a private struct. The access control on the struct made the return unusable otherwise.
-- Resolve IPNS queries locally if the query is for our own peer ID. This will make browsing one's own OpenBazaar page much faster.
-- Increase MaxRecordAge to 7 days to match the message TTL.
-- Accept gateway IPNS queries using a blockchainID. Resolves names to a peer ID.
-- Cache INPS gateway queries for 10 minutes.
-- Change gateway PUT to accept a directory hash.
-- Added optional cookie and basic authentication to gateway.
-- Added persistent cache for IPNS. Used if network query fails.
-- Remove private key check from config initialization as OpenBazaar doesn't store the private key in the config.
-- Bundled go-libp2p-kad-dht so we can modify protocol strings without maintaining another fork.
-- Add QuerySize paramter to IPNS config.
-- Gateway accepts providers.
-- Refactor bootstrap to run in separate goroutine with a done chan.
+- namesys/publisher.go change DefaultRecordTTL and DefaultPublishLifetime to one week.
+- namesys/namesys.go NewNameSystem takes in a database instance for caching records.
+- namesys/routing.go resolveOnce stores the resolved record in the database using `cachePrefix` and returns the record when routing returns not found if UsePersistentCache is true.
+- namesys/namesys.go NewNameSystem takes in a custom DNSResolver instance which can be nil.
+
+- repo/config/ipns.go Add QuerySize and Use PersistentCache paramters to IPNS config.
+
+- core/core.go startOnlineServices takes in a DNSResolver to initialize the `NameSystem` with.
+- core/builder.go add a DNSResolver to the build config to pass into startOnlineServices
+- core/bootstrap.go add `DoneChan` to the bootstrap config which is closed when the inital bootstrap finishes. This is in place of blocking for the initial bootstrap.
+- core/commands/swarm.go Change the `swarm` `peers` output to []string from a private struct. The access control on the struct made the return unusable otherwise.
+- core/commands/ipns.go Initialize NewNameSystem with a NewDNSResolver().
+- core/commands/dht.go Swap out DHT import with DHT fork.
+- core/coreunix/add.go AddWithContext function modified to use CIDv1.
+
+Finally, we've had to patch go-multiaddr to handle CIDv1 in the /ipfs/ addr strings. We'll try to get this merged into the main repo.
