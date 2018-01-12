@@ -15,7 +15,7 @@ import (
 	host "gx/ipfs/QmaSxYRuMq4pkpBBG2CYaRrPx2z7NmMVEs34b9g61biQA6/go-libp2p-host"
 )
 
-const ProtocolSNR = "/openbazaar/supernoderouting"
+const ProtocolSNR = "/bitbook/supernoderouting"
 
 var log = logging.Logger("supernode/proxy")
 
