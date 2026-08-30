@@ -1,13 +1,11 @@
 # Current Task
 
-Ticket: IPFS-GOV-002
+Ticket: IPFS-GOV-003
 
 State: ACCEPTED
 
 Actor: Lead Engineer/Reviewer — Codex
 
-The repository-local test-first policy is established by
-[IPFS-GOV-002](../../tickets/IPFS-GOV-002.md). No production or test implementation is
-currently authorized. The reviewer must publish a new bounded ticket with an exact source
-baseline, authorized paths, red/green and falsification evidence, commands, acceptance
-criteria, and stop condition before Sr Dev — Grok Build edits source.
+[IPFS-GOV-003](../../tickets/IPFS-GOV-003.md) establishes the complete reviewer, Codex
+Spark, Grok Build, Hermes, and owner workflow. The governance publication is accepted.
+No production, test, dependency, CI, or protocol implementation is currently authorized.
